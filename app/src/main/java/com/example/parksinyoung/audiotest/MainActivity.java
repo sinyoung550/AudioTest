@@ -1,7 +1,9 @@
 package com.example.parksinyoung.audiotest;
 
 
+import android.icu.text.SimpleDateFormat;
 import android.media.MediaPlayer;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -16,12 +18,13 @@ import android.widget.TextView;
 public class MainActivity extends AppCompatActivity {
     ListView list;
     Button butPlay,butStop,butpause;
-    TextView textMusic;
+    TextView textMusic,texttime;
     ProgressBar progress;
     MediaPlayer mediaPlayer;
     String[] musics ={"shape of you","faded","ddd"};
     int[] musicResIds={R.raw.letmeloveyou,R.raw.rockabye,R.raw.shapeofyou};
     int selectedMusicId;
+    int i;
     boolean selectePauseButton;
 
     @Override
@@ -45,27 +48,41 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 selectedMusicId=musicResIds[i];
+                MainActivity.this.i=i;
             }
         });
 
         butPlay.setOnClickListener(new View.OnClickListener(){
-            @Override
+            SimpleDateFormat timeFormat = new SimpleDateFormat("mm:ss");
             public void onClick(View view) {
                 if(selectePauseButton) {
-                    mediaPlayer.start();
                     selectePauseButton=false;
                 } else{
                     mediaPlayer=MediaPlayer.create(MainActivity.this,selectedMusicId);
                 }
                 mediaPlayer.start();
-                progress.setVisibility(view.VISIBLE);
+                Thread musicThread = new Thread(){
+                    @Override
+                    public void run() {
+                        if(mediaPlayer == null) return;
+                        progress.setMax(mediaPlayer.getDuration());
+                        while(mediaPlayer.isPlaying()){
+                            progress.setProgress(mediaPlayer.getCurrentPosition());
+                            texttime.setText("진행시간: "+timeFormat.format());
+
+                        }
+                    }
+                };
+                musicThread.start();
+                SystemClock.sleep(200); //0.2초간격
             }
         });
         butStop.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
+               selectePauseButton=false;
                 mediaPlayer.stop();
-                progress.setVisibility(View.INVISIBLE);
+
             }
         });
         butpause.setOnClickListener(new View.OnClickListener(){
@@ -73,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 selectePauseButton=true;
                 mediaPlayer.pause();
-                progress.setVisibility(View.INVISIBLE);
             }
         });
     }
